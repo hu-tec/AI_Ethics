@@ -400,13 +400,28 @@ function renderContent(s){
 }
 
 function dashHTML(){
-  const cards=[['오늘 진단','128','어제 +12'],['누적 회원','1,452','이달 +210'],['이번 달 매출','32만','유료 결제'],['평균 점수','78','전체 평균']];
+  const D = (window.RAW && RAW.diagnoses && RAW.diagnoses.length) ? RAW.diagnoses : null;
+  let cards, byType='';
+  if(D){
+    const total=D.length, paid=D.filter(x=>x.is_paid).length, free=total-paid;
+    const avg=total?Math.round(D.reduce((s,x)=>s+(x.total_score||0),0)/total):0;
+    cards=[['총 진단',total+'건','전체 누적'],['유료 진단',paid+'건','유료 유형'],['무료 진단',free+'건','무료 인식'],['평균 점수',avg+'점','전체 평균']];
+    // 유형별 건수
+    const t={}; D.forEach(x=>{const k=x.diag_label||x.diag_type||'기타'; t[k]=(t[k]||0)+1;});
+    const tr=Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>
+      `<tr><td class="no">${i+1}</td><td>${k}</td><td><b>${v}건</b></td></tr>`).join('');
+    byType=`<div class="panel" style="margin:0 12px 12px"><div class="phead"><div class="pt">유형별 진단 수 <span class="bd">실데이터</span></div></div>`+
+      `<table><thead><tr><th class="no">No</th><th>진단 유형</th><th>건수</th></tr></thead><tbody>${tr}</tbody></table></div>`;
+  } else {
+    cards=[['오늘 진단','128','어제 +12'],['누적 회원','1,452','이달 +210'],['이번 달 매출','32만','유료 결제'],['평균 점수','78','전체 평균']];
+  }
   const rows=DATA.sessions.rows;
   const tb=rows.map((r,i)=>{const det=r[r.length-1];const c=r.slice(0,-1);
     return `<tr onclick='openDetail(this,${JSON.stringify(det)},"${c[0].split("|")[0]}")'>
      <td class="no">${i+1}</td><td>${cs(...c[0].split('|'))}</td><td>${cs(...c[2].split('|'))}</td><td>${c[3]}</td><td>${cs(c[4].split('|')[0], gb(c[4].split('|')[1]))}</td><td>${c[5]}</td></tr>`;}).join('');
   return `<div class="cards">`+cards.map(c=>`<div class="card"><div class="cl">${c[0]}</div><div class="cn">${c[1]}</div><div class="cu">${c[2]}</div></div>`).join('')+`</div>`+
-    `<table><thead><tr><th class="no">No</th><th>이름</th><th>진단</th><th>대상</th><th>결과</th><th>날짜</th></tr></thead><tbody>${tb}</tbody></table>`;
+    byType+
+    `<div class="panel" style="margin:0 12px 12px"><div class="phead"><div class="pt">최근 진단</div></div><table><thead><tr><th class="no">No</th><th>이름</th><th>진단</th><th>대상</th><th>결과</th><th>날짜</th></tr></thead><tbody>${tb}</tbody></table></div>`;
 }
 
 /* ============ 상세 패널 ============ */
@@ -441,6 +456,7 @@ const SB_KEY=window.SB_KEY||'';
 const sb=(window.supabase && SB_URL && SB_URL.indexOf('YOUR')===-1)?window.supabase.createClient(SB_URL,SB_KEY):null;
 const fmt=d=> d? String(d).slice(5,16).replace('T',' '):'';
 const PM={card:'💳 카드',kakao:'💛 카카오',naver:'💚 네이버'};
+window.RAW={diagnoses:[],leads:[],payments:[]};  // 현황 통계용 원본
 
 function axisSum(ax){ if(!ax||!ax.length) return []; const s=[...ax].sort((a,b)=>b.score-a.score);
   return [['강점 TOP',s.slice(0,3).map(x=>x.axis+' '+x.score).join(', ')],['취약 TOP',s.slice(-3).map(x=>x.axis+' '+x.score).join(', ')]]; }
@@ -464,6 +480,7 @@ async function loadDB(){
       sb.from('payments').select('*').order('created_at',{ascending:false}).limit(300),
     ]);
     if(dg.error||ld.error||pm.error){ console.error('[Supabase 조회오류]',dg.error||ld.error||pm.error); }
+    RAW.diagnoses=dg.data||[]; RAW.leads=ld.data||[]; RAW.payments=pm.data||[]; // 현황 통계용
     if(dg.data){ DATA.sessions.rows=dg.data.map(mapSession); DATA.sessions.badge='총 '+dg.data.length+'건'; }
     if(ld.data){ DATA.leads.rows=ld.data.map(mapLead); DATA.leads.badge='총 '+ld.data.length+'건'; }
     if(pm.data){ DATA.pays.rows=pm.data.map(mapPay); DATA.pays.badge='총 '+pm.data.length+'건'; }
