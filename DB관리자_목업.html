@@ -485,9 +485,9 @@ async function doLogin(){
 async function doLogout(){ if(sb){ await sb.auth.signOut(); } location.reload(); }
 async function bootstrap(){
   if(!sb){ console.warn('[Supabase 미설정] 샘플 데이터를 표시합니다 (config.js 확인).'); return; }
-  const { data:{ session } }=await sb.auth.getSession();
-  if(session){ loadDB(); }
-  else { document.getElementById('loginOverlay').style.display='flex'; }
+  // 들어올 때마다 항상 로그인 (이전 세션이 있어도 로그아웃 후 로그인창 표시)
+  try{ await sb.auth.signOut(); }catch(e){}
+  document.getElementById('loginOverlay').style.display='flex';
 }
 bootstrap();
 </script>
