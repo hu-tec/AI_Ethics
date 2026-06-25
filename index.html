@@ -1851,7 +1851,7 @@ class Component extends DCLogic {
       closeDiag:()=>this.setState({diagOpen:false,diagStep:0,diagType:null,curQ:0,answers:{},results:null,paymentPending:false}),
       prevStep:()=>this.setState(p=>({diagStep:Math.max(1,p.diagStep-1)})),
       goStep2:()=>{if(canGoS2)this.setState({diagStep:2});},
-      step2Next:()=>{if(!canGoS3)return;if(isPaid){this.save('ae_leads',{type:s.diagType,name:s.dName,phone:s.dPhone,email:s.dEmail});window.sbInsert&&window.sbInsert('leads',{diag_type:s.diagType,name:s.dName,phone:s.dPhone,email:s.dEmail});this.setState({paymentPending:true});}else{this.setState({diagStep:3});}},
+      step2Next:()=>{if(!canGoS3)return;if(isPaid){this.save('ae_leads',{type:s.diagType,name:s.dName,phone:s.dPhone,email:s.dEmail});window.sbInsert&&window.sbInsert('leads',{diag_type:s.diagType,name:s.dName,phone:s.dPhone,email:s.dEmail});}/* [임시 데모] 유료도 결제 없이 바로 진단 진행 → 모든 유형 저장. 결제 다시 켜려면: 위 if문에 this.setState({paymentPending:true});return; 추가 */this.setState({diagStep:3});},
       cancelPayment:()=>this.setState({paymentPending:false}),
       completePayment:()=>{this.save('ae_payments',{type:s.diagType,price:diagPrice,name:s.dName,email:s.dEmail});window.sbInsert&&window.sbInsert('payments',{diag_type:s.diagType,amount:diagPrice,name:s.dName,email:s.dEmail,pay_method:s.payMethod,status:'완료'});this.setState({paymentPending:false,diagStep:3});},
       startQ:()=>{if(canStart)this.setState({diagStep:4,curQ:0,answers:{},curPage:0});},
